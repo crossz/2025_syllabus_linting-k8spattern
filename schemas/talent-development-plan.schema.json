@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/educational-docs-schema.json",
+  "title": "Educational Documents Schema",
+  "description": "Schema for educational documentation template",
+  "type": "object",
+  "properties": {
+    "program_name": {
+      "type": "string",
+      "description": "专业名称 / Program Name"
+    },
+    "program_code": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]{4}$",
+      "description": "专业代码 / Program Code"
+    },
+    "department": {
+      "type": "string",
+      "description": "所属院系 / Department"
+    },
+    "degree_level": {
+      "type": "string",
+      "enum": [
+        "本科",
+        "硕士",
+        "博士"
+      ],
+      "description": "学位层次 / Degree Level"
+    },
+    "academic_year": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{4}$",
+      "description": "适用学年 / Academic Year"
+    },
+    "graduation_requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "requirement_id": {
+            "type": "string",
+            "pattern": "^GR\\d{2}$",
+            "description": "毕业要求ID"
+          },
+          "description": {
+            "type": "string",
+            "description": "毕业要求描述"
+          },
+          "related_courses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "CS001",
+                "CS002",
+                "CS003",
+                "CS004",
+                "CS005",
+                "CS006"
+              ]
+            },
+            "description": "相关课程"
+          },
+          "assessment_methods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "评估方法"
+          }
+        },
+        "required": [
+          "requirement_id",
+          "description",
+          "related_courses",
+          "assessment_methods"
+        ]
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "program_name",
+    "program_code",
+    "department",
+    "degree_level",
+    "academic_year",
+    "graduation_requirements"
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/course-syllabi-schema.json",
+  "title": "Course Syllabi Schema",
+  "description": "Schema for course syllabi documentation",
+  "type": "object",
+  "properties": {
+    "course_code": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]{4}$",
+      "description": "课程代码 / Course Code"
+    },
+    "course_name": {
+      "type": "string",
+      "description": "课程名称 / Course Name"
+    },
+    "credits": {
+      "type": "string",
+      "description": "学分 / Credits"
+    },
+    "total_hours": {
+      "type": "string",
+      "description": "总学时 / Total Hours"
+    },
+    "lecture_hours": {
+      "type": "string",
+      "description": "理论学时 / Lecture Hours"
+    },
+    "lab_hours": {
+      "type": "string",
+      "description": "实验/实践学时 / Lab/Practice Hours"
+    },
+    "prerequisites": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "先修课程 / Prerequisites"
+    },
+    "course_type": {
+      "type": "string",
+      "enum": ["必修", "选修"],
+      "description": "课程性质 / Course Type"
+    },
+    "target_program": {
+      "type": "string",
+      "description": "面向专业 / Target Program"
+    },
+    "course_objectives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "objective_id": {
+            "type": "string",
+            "pattern": "^CO\\d{2}$",
+            "description": "教学目标ID"
+          },
+          "description": {
+            "type": "string",
+            "description": "教学目标描述"
+          },
+          "aligned_graduation_requirements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "对齐的毕业要求"
+          }
+        },
+        "required": ["objective_id", "description", "aligned_graduation_requirements"]
+      },
+      "minItems": 1
+    },
+    "course_content": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "chapter": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "章节"
+          },
+          "title": {
+            "type": "string",
+            "description": "章节标题"
+          },
+          "hours": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "学时"
+          },
+          "key_points": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "要点"
+          },
+          "alignment_with_objectives": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "对齐的教学目标"
+          }
+        },
+        "required": ["chapter", "title", "hours", "key_points", "alignment_with_objectives"]
+      }
+    }
+  },
+  "required": [
+    "course_code", 
+    "course_name", 
+    "credits", 
+    "total_hours", 
+    "lecture_hours", 
+    "lab_hours", 
+    "prerequisites", 
+    "course_type", 
+    "target_program", 
+    "course_objectives", 
+    "course_content"
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/teaching-schedule-schema.json",
+  "title": "Teaching Schedule Schema",
+  "description": "Schema for teaching schedule documentation",
+  "type": "object",
+  "properties": {
+    "course_name": {
+      "type": "string",
+      "description": "课程名称 / Course Name"
+    },
+    "course_code": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]{4}$",
+      "description": "课程代码 / Course Code"
+    },
+    "instructor": {
+      "type": "string",
+      "description": "任课教师 / Instructor"
+    },
+    "semester": {
+      "type": "string",
+      "pattern": "^\\d{4}年[春夏秋冬]季学期$",
+      "description": "学期 / Semester"
+    },
+    "total_weeks": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "总周数 / Total Weeks"
+    },
+    "teaching_schedule": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "week": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "周次"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "日期"
+          },
+          "topic": {
+            "type": "string",
+            "description": "主题"
+          },
+          "content_details": {
+            "type": "string",
+            "description": "内容详情"
+          },
+          "teaching_methods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "教学方法"
+          },
+          "student_preparation": {
+            "type": "string",
+            "description": "学生准备"
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "作业"
+          },
+          "assessment_points": {
+            "type": "string",
+            "description": "评估要点"
+          }
+        },
+        "required": [
+          "week", 
+          "date", 
+          "topic", 
+          "content_details", 
+          "teaching_methods", 
+          "student_preparation", 
+          "assignments", 
+          "assessment_points"
+        ]
+      }
+    }
+  },
+  "required": [
+    "course_name",
+    "course_code",
+    "instructor",
+    "semester",
+    "total_weeks",
+    "teaching_schedule"
+  ]
+}
