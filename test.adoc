@@ -1,0 +1,113 @@
+= 你的毕业论文题目
+:doctype: book
+:toc: left 
+:toclevels: 3
+:numbered:
+:docname: my_graduation_thesis
+:lang: zh
+
+作者： 你的姓名
+学号： 你的学号
+院系： 你的学院
+专业： 你的专业
+导师： 导师姓名
+完成日期： 2025-06-01
+
+:keywords: 关键词1; 关键词2; 关键词3
+:keywords-en: Keyword1; Keyword2; Keyword3
+
+[discrete]
+== 摘要
+
+在这里撰写你的中文摘要，说明研究目的、方法、结果和结论。摘要应简明扼要，字数通常在300字左右。
+
+关键词： {keywords}
+
+[discrete]
+== Abstract
+
+Write your abstract in English here. It should be a concise summary of your research purpose, methods, results, and conclusion.
+
+Keywords: {keywords-en}
+
+<<<
+
+== 引言
+
+[discrete]
+=== 研究背景
+
+介绍你的研究领域背景和重要性。
+
+[discrete]
+=== 国内外研究现状
+
+综述国内外相关研究工作的进展。
+
+[discrete]
+=== 本文研究内容及结构安排
+
+简要介绍本论文的主要研究内容和后续章节安排。
+
+== 相关理论与技术基础 （或根据你的章节调整）
+
+本章主要介绍...相关的基础理论和技术。
+
+=== 关键技术一
+
+……
+
+== 你的核心章节1 （例如：系统设计与实现）
+
+……
+
+== 你的核心章节2 （例如：实验结果与分析）
+
+.重要的实验数据表
+[options="header"]
+|====
+| 序号 | 数据A | 数据B | 结果
+| 1    | 23.5  | 45.2  | 良好
+| 2    | 26.1  | 47.8  | 优秀
+|====
+
+.重要的实验数据表（三线表）
+[options="header,footer,frame=topbot"]
+|===
+|序号 |数据A |数据B |结果
+
+|1
+|23.5
+|45.2
+|良好
+
+|2
+|26.1
+|47.8
+|优秀
+|===
+
+.结果对比图
+image::result_chart.png[结果对比图, 400]
+
+== 结论
+
+[discrete]
+=== 工作总结
+
+总结本文完成的主要工作和取得的成果。
+
+[discrete]
+=== 未来展望
+
+对研究中存在的不足进行分析，并提出未来可能改进的方向。
+
+== 参考文献
+
+* [[[ref1]]] 作者1, 作者2. 文章标题[J]. 期刊名, 年份, 卷号(期号): 起止页码.
+* [[[ref2]]] Author1, Author2. Title of the Book[M]. Publisher Location: Publisher Name, Year.
+* [[[ref3]]] ...
+
+== 致谢
+
+在此向指导老师、协助完成研究的同志、提供资助的组织和个人表示衷心的感谢。
