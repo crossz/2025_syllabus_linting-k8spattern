@@ -1,16 +1,20 @@
 {
-  "name": "educational-docs-template",
+  "name": "educational-docs-monorepo",
   "version": "1.0.0",
-  "description": "Template for educational documentation with linting",
-  "main": "index.js",
+  "description": "Monorepo for educational documentation with linting",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "lint": "node custom-lint.js",
+    "dev": "pnpm -r dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
     "lint:markdown": "markdownlint educational_docs/01-talent-development-plan.md educational_docs/02-course-syllabi.md educational_docs/03-teaching-schedule.md",
     "lint:fix": "markdownlint --fix educational_docs/01-talent-development-plan.md educational_docs/02-course-syllabi.md educational_docs/03-teaching-schedule.md",
     "validate": "node validate-docs.js",
     "setup-hooks": "bash scripts/setup-hooks.sh"
   },
-  "keywords": ["education", "template", "documentation"],
+  "keywords": ["education", "template", "documentation", "monorepo"],
   "author": "Educational Technology Team",
   "license": "MIT",
   "devDependencies": {
@@ -19,7 +23,7 @@
     "ajv": "^8.12.0",
     "ajv-formats": "^2.1.1"
   },
-  "dependencies": {},
+  "packageManager": "pnpm@9.0.0",
   "markdownlint": {
     "customRules": [
       "./.markdownlint-custom-rules/frontmatter-schema-validation.js",

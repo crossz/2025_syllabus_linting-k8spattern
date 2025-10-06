@@ -1,0 +1,14 @@
+{
+  "name": "slides-content",
+  "version": "1.0.0",
+  "description": "Educational slides and quiz content",
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'Slides content package development server'",
+    "build": "echo 'Building slides content package'",
+    "test": "echo 'Testing slides content package'"
+  },
+  "keywords": ["slides", "education", "quiz", "content"],
+  "author": "Educational Technology Team",
+  "license": "MIT"
+}

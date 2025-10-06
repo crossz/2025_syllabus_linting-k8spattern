@@ -1,0 +1,23 @@
+export function Slide16() {
+  return (
+    <div className="slide-container">
+      <h2 className="text-3xl font-bold mb-6">Chapter 5: Lifecycle Management</h2>
+      <h3 className="text-2xl mb-4">Other Lifecycle Controls - 终止宽限期</h3>
+      <div className="mb-8">
+        <ul className="list-disc pl-8 mb-6 text-gray-700 dark:text-gray-300">
+          <li>.spec.terminationGracePeriodSeconds: 默认30秒</li>
+          <li>控制 SIGTERM 到 SIGKILL 等待</li>
+        </ul>
+        <div className="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-4 mb-6">
+          <p className="text-blue-800 dark:text-blue-200 italic">
+            <span className="italic font-medium">The termination grace period specifies the time in seconds...</span>
+          </p>
+        </div>
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">关键点:</h2>
+        <ul className="list-disc pl-8 text-gray-700 dark:text-gray-300">
+          <li>自定义以匹配应用需求</li>
+        </ul>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+html,
+body {
+  @apply bg-white dark:bg-gray-950;
+
+  @media (prefers-color-scheme: dark) {
+    color-scheme: dark;
+  }
+}
+
+/* Custom styles for Kubernetes Patterns presentation */
+.slide-container {
+  @apply w-full max-w-4xl mx-auto;
+}
+
+.slide-content {
+  @apply bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900;
+}
+
+.book-cover-placeholder {
+  @apply bg-gradient-to-r from-blue-400 to-indigo-500 border-2 border-dashed border-white rounded-xl w-full h-64 flex items-center justify-center;
+}
+
+pre {
+  @apply bg-gray-800 text-gray-100 dark:bg-gray-700 dark:text-gray-200;
+}
+
+/* Remix.run inspired styles */
+.hero-gradient {
+  @apply bg-gradient-to-r from-blue-600 to-indigo-700;
+}

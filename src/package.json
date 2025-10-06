@@ -1,0 +1,16 @@
+{
+  "name": "educational-docs-template",
+  "version": "1.0.0",
+  "description": "Template for educational documentation with linting",
+  "type": "module",
+  "scripts": {
+    "lint": "node ../custom-lint.js",
+    "lint:markdown": "markdownlint ../educational_docs/01-talent-development-plan.md ../educational_docs/02-course-syllabi.md ../educational_docs/03-teaching-schedule.md",
+    "lint:fix": "markdownlint --fix ../educational_docs/01-talent-development-plan.md ../educational_docs/02-course-syllabi.md ../educational_docs/03-teaching-schedule.md",
+    "validate": "node ../validate-docs.js",
+    "setup-hooks": "bash ../scripts/setup-hooks.sh"
+  },
+  "keywords": ["education", "template", "documentation"],
+  "author": "Educational Technology Team",
+  "license": "MIT"
+}
