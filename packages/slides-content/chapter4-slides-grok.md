@@ -112,11 +112,6 @@ D. grpc
 
 原文: readinessProbe: httpGet: path: /ready port: 8080
 
-15. 填空题：Startup probes 用于有长初始化时间的容器，如执行数据库迁移或加载大（ ）。
-
-答案: datasets
-
-原文: Startup probes are used for containers with long initialization times, ensuring the container is fully started before liveness and readiness probes are applied.
 
 16. 单选题：Startup probe 的作用是什么？（ ）
 A. 检查是否活着
@@ -144,11 +139,6 @@ D. 网络配置
 
 原文: These observations influence the lifecycle management of Pods and the way traffic is routed to the application.
 
-19. 填空题：Proper configuration of probe parameters 如 initialDelaySeconds、periodSeconds、failureThreshold 是为了平衡（ ）和资源使用。
-
-答案: responsiveness
-
-原文: Proper configuration of probe parameters (e.g., initialDelaySeconds, periodSeconds, failureThreshold) is crucial to balance between responsiveness and resource usage.
 
 20. 单选题：Liveness probes 确保失败容器被重启，而 readiness probes 防止流量发送到（ ）容器。
 
