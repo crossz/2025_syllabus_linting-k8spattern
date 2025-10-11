@@ -1,320 +1,527 @@
-### 题目清单
+---
+class: lead
+---
+# Kubernetes Patterns
+## Chapter 6: Automated Placement
+本章介绍Kubernetes调度器的核心功能，焦点是自动将Pod分配到满足资源请求和调度策略的节点，并探讨影响放置决策的外部机制。
 
-1. 填空题：Kubernetes 调度器是将新 Pod 分配给符合容器资源请求并遵守调度策略的（ ）的核心功能。
+- 本章介绍 Kubernetes 调度器的核心功能
+- 焦点是自动将 Pod 分配到满足资源请求和调度策略的节点
+- 探讨影响放置决策的外部机制
 
-答案: nodes
+---
+# Problem
+微服务系统规模庞大，手动管理Pod放置不可行，需要自动化调度来处理动态变化。
 
-原文: Automated Placement is the core function of the Kubernetes scheduler for assigning new Pods to nodes that match container resource requests and honor scheduling policies.
+> A reasonably sized microservices-based system consists of tens or even hundreds of isolated processes.
 
-2. 单选题：Kubernetes 调度器在分配 Pod 时，会考虑哪些因素？（ ）
-A. 仅考虑资源需求
-B. 运行时依赖、资源需求和高可用性策略
-C. 仅考虑节点标签
-D. 仅考虑 Pod 亲和性
+- 微服务系统规模大，包含众多独立进程
+- 手动管理放置不可行，需要自动化
+- 强调调度在分布式系统中的关键作用
 
-答案: B. 运行时依赖、资源需求和高可用性策略
+---
+# Problem
+容器和Pod擅长打包部署，但无法解决将进程放置到合适节点的难题。
 
-原文: It does this by considering runtime dependencies, resource requirements, and guiding policies for high availability; by spreading Pods horizontally; and also by colocating Pods nearby for performance and low-latency interactions.
+> Containers and Pods do provide nice abstractions for packaging and deployment but do not solve the problem of placing these processes on suitable nodes.
 
-3. 填空题：每个节点的容量通过公式计算：可分配容量 = 节点容量 - Kubernetes 保留 - 系统保留 - （ ）阈值。
+- 容器和 Pod 擅长打包，但忽略节点放置
+- 放置问题涉及资源和依赖匹配
+- 自动化调度成为必要解决方案
 
-答案: Eviction
+---
+# Problem
+随着微服务数量增长，手动分配Pod到节点变得不可持续。
 
-原文: Allocatable [capacity for application pods] = Node Capacity [available capacity on a node] - Kube-Reserved [Kubernetes daemons like kubelet, container runtime] - System-Reserved [Operating System daemons like sshd, udev] - Eviction Thresholds [Reserved memory to prevent system OOMs]
+> With a large and ever-growing number of microservices, assigning and placing them individually to nodes is not a manageable activity.
 
-4. 单选题：如果节点上运行不受 Kubernetes 管理的容器，如何处理其资源消耗？（ ）
-A. 忽略它
-B. 使用占位 Pod 来代表并预留资源
-C. 自动调整节点容量
-D. 删除这些容器
+- 微服务数量增长，手动分配不可持续
+- 需要可扩展的放置策略
+- 引入调度器处理动态增长
 
-答案: B. 使用占位 Pod 来代表并预留资源
+---
+# Problem
+容器依赖关系和资源需求随时间变化，调度需实时适应。
 
-原文: A workaround is to run a placeholder Pod that doesn’t do anything but has only resource requests for CPU and memory corresponding to the untracked containers’ resource use amount.
+> Containers have dependencies among themselves, dependencies to nodes, and resource demands, and all of that changes over time too.
 
-5. 填空题：容器资源需求包括声明资源配置文件（带有请求和限制）和环境依赖，如存储或（ ）。
+- 容器间、节点依赖及资源需求动态变化
+- 时间因素增加复杂性
+- 调度需实时适应这些变动
 
-答案: ports
+---
+# Problem
+集群资源可用性随扩展或消耗而变，影响放置决策。
 
-原文: It boils down to having containers that declare their resource profiles (with request and limit) and environment dependencies such as storage or ports.
+> The resources available on a cluster also vary over time, through shrinking or extending the cluster, or by having it consumed by already placed containers.
 
-6. 单选题：Kubernetes 调度器的配置在 v1.23 版本之前使用什么？（ ）
-A. 调度配置文件
-B. 调度策略
-C. 插件扩展
-D. 节点亲和性
+- 集群资源随扩展、收缩或消耗而变
+- 已放置容器影响可用性
+- 动态环境要求智能分配
 
-答案: B. 调度策略
+---
+# Problem
+Pod放置方式直接影响分布式系统的可用性、性能和容量。
 
-原文: In Kubernetes versions before v1.23, a scheduling policy can be used to configure the predicates and priorities of a scheduler.
+> The way we place containers impacts the availability, performance, and capacity of the distributed systems as well.
 
-7. 填空题：调度过程包括过滤节点、为剩余节点评分并按权重排序，然后通知 API 服务器关于（ ）决策。
+- 放置决策直接影响系统可用性、性能和容量
+- 优化放置提升整体效率
+- 强调策略在高可用设计中的重要性
 
-答案: assignment
+---
+# Problem
+调度如射击移动目标，需要持续调整以应对动态环境。
 
-原文: In the last stage, the scheduler notifies the API server about the assignment decision, which is the primary outcome of the scheduling process.
+> All of that makes scheduling containers to nodes a moving target that has to be shot on the move.
 
-8. 单选题：节点选择器（nodeSelector）用于什么？（ ）
-A. 强制 Pod 到特定节点
-B. 定义 Pod 亲和性
-C. 设置污点
-D. 配置拓扑扩展
+- 调度如射击移动目标，需持续调整
+- 捕捉动态本质的比喻
+- 突出自动化工具的必要性
 
-答案: A. 强制 Pod 到特定节点
+---
+# Problem
+Kubernetes集群由节点组成，Pod是基本部署单元。
 
-原文: The .spec.nodeSelector Pod field specifies a map of key-value pairs that must be present as labels on the node for the node to be eligible to run the Pod.
+> Kubernetes cluster comprises of collection of nodes. Pod is the most basic element that we deploy in Kubernetes.
 
-9. 填空题：节点亲和性是一种更具表达力的方式，允许指定规则为必需或（ ）。
+- 集群由节点组成，Pod 是基本部署单元
+- 理解基础架构
+- 为调度过程奠定基础
 
-答案: preferred
+---
+# Problem
+Kubernetes调度器负责将Pod分配到特定节点。
 
-原文: Node affinity, which is a more expressive way of the node selector approach described previously that allows specifying rules as either required or preferred.
+> Kubernetes scheduler plays a fundamental role, as it assigns the pods to a particular node.
 
-10. 单选题：Pod 亲和性和反亲和性基于什么来表达规则？（ ）
-A. 仅节点标签
-B. 拓扑级别，如节点、机架、云区域
-C. 仅资源需求
-D. 仅污点
+- 调度器核心作用：Pod 到节点的分配
+- 自动化基础
+- 确保资源利用和策略遵守
 
-答案: B. 拓扑级别，如节点、机架、云区域
+---
+# Problem
+新Pod定义在API服务器中，调度器从中获取并分配节点。
 
-原文: Using the topologyKey field, and the matching labels, it is possible to enforce more fine-grained rules, which combine rules on domains like node, rack, cloud provider zone, and region.
+> Each new Pod which is to be created is defined in API server. Kubernetes scheduler takes the definition from API server for the Pod and assigns it to a node.
 
-11. 填空题：拓扑扩展约束允许 Pod 在拓扑中不均匀分布的最大程度由（ ）定义。
+- 新 Pod 定义在 API 服务器，调度器从中获取并分配
+- 流程概述
+- 集成 API 服务器的协作
 
-答案: maxSkew
+---
+# Problem
+Pod放置考虑可用资源、策略和依赖等因素。
 
-原文: maxSkew defines the maximum degree to which Pods can be unevenly distributed in the topology.
+> The placement of a Pod to a specific node factors in available resource, policies, dependencies etc.
 
-12. 单选题：whenUnsatisfiable 字段在 maxSkew 无法满足时定义什么？（ ）
-A. 立即删除 Pod
-B. 采取的行动，如 DoNotSchedule 或 ScheduleAnyway
-C. 调整节点容量
-D. 添加新节点
+- 放置考虑可用资源、策略和依赖
+- 多因素决策
+- 平衡复杂约束
 
-答案: B. 采取的行动，如 DoNotSchedule 或 ScheduleAnyway
+---
+# Solution
+Kubernetes中，调度器负责将Pod分配到节点。
 
-原文: The whenUnsatisfiable field defines what action should be taken when maxSkew can’t be satisfied. DoNotSchedule is a hard constraint preventing the scheduling of Pods, whereas ScheduleAnyway is a soft constraint that gives scheduling priority to nodes that reduce cluster imbalance.
+> In Kubernetes, assigning Pods to nodes is done by the scheduler.
 
-13. 填空题：污点（taints）允许节点控制哪些 Pod （ ）或不应调度到它们上。
+- 调度器负责 Pod 到节点的分配
+- 核心组件介绍
+- 自动化放置的基础
 
-答案: should
+---
+# Solution
+调度领域高度可配置，正在快速演进。
 
-原文: Taints and tolerations are the opposite. They allow the nodes to control which Pods should or should not be scheduled on them.
+> It is an area that is highly configurable, still evolving, and changing rapidly as of this writing.
 
-14. 单选题：污点的影响包括哪些？（ ）
-A. NoSchedule, PreferNoSchedule, NoExecute
-B. Required, Preferred, Ignored
-C. Filter, Score, Bind
-D. Affinity, Anti-Affinity, Topology
+- 调度高度可配置，正在快速演进
+- 适应性强
+- 鼓励探索最新功能
 
-答案: A. NoSchedule, PreferNoSchedule, NoExecute
+---
+# Solution
+本章覆盖主要调度控制机制和驱动力。
 
-原文: There are hard taints that prevent scheduling on a node (effect=NoSchedule), soft taints that try to avoid scheduling on a node (effect=PreferNoSchedule), and taints that can evict already-running Pods from a node (effect=NoExecute).
+> In this chapter, we cover the main scheduling control mechanisms, driving forces ...
 
-15. 填空题：如果容器资源需求太粗粒度，或节点太小，可能会导致资源（ ）。
+- 章节覆盖主要控制机制和驱动力
+- 焦点于实用指导
+- 构建全面理解
 
-答案: stranded
+---
+# Placement Policies
+除了默认调度器策略，还可运行多个调度器，Pod可指定使用哪个。
 
-原文: You may end up with stranded resources in nodes that are not utilized.
+> Consider that in addition to configuring the policies of the default scheduler, it is also possible to run multiple schedulers and allow Pods to specify which scheduler to place them.
 
-16. 单选题：Kubernetes 去调度器（descheduler）用于什么？（ ）
-A. 初始 Pod 放置
-B. 碎片整理节点并改进利用率
-C. 定义污点
-D. 配置亲和性
+- 支持多调度器配置，Pod 可指定使用哪个
+- 增强灵活性
+- 适用于不同工作负载隔离
 
-答案: B. 碎片整理节点并改进利用率
+---
+# Placement Policies
+通过唯一名称启动自定义调度器实例，实现差异化配置。
 
-原文: The Kubernetes descheduler, which helps defragment nodes and improve their utilization.
-
-17. 填空题：在讨论中，放置是分配 Pod 到节点的（ ），你想要最小干预。
+> You can start another scheduler instance that is configured differently by giving it a unique name.
 
-答案: art
-
-原文: Placement is the art of assigning Pods to nodes. You want to have as minimal intervention as possible.
-
-18. 单选题：nodeName 字段用于什么？（ ）
-A. 硬编码 Pod 到节点
-B. 定义软要求
-C. 设置拓扑键
-D. 添加污点
-
-答案: A. 硬编码 Pod 到节点
-
-原文: This field provides the simplest form of hard wiring a Pod to a node.
-
-19. 填空题：自定义调度器可以运行在标准调度器（ ）或旁边。
-
-答案: instead of
-
-原文: A custom scheduler can run instead of, or alongside, the standard Kubernetes scheduler.
-
-20. 单选题：拓扑扩展约束在写作时是一个（ ）的功能。
-
-答案: evolving
-
-原文: Topology spread constraints is a feature that is still evolving at the time of this writing.
-
-### PPT Slides 文字稿
-
-**Slide 1: 标题页**  
-标题: Kubernetes Patterns - Chapter 6: Automated Placement (扩展版)  
-副标题: Reusable Elements for Designing Cloud Native Applications (Second Edition)  
-作者: Bilgin Ibryam & Roland Huß  
-内容概述: 本PPT详细覆盖 Automated Placement 模式，扩展为20页，深入调度过程和控制机制。  
-(包括书籍封面图片)
-
-**Slide 2: 章节概述 (1/2)**  
-主要内容:  
-- Chapter 6: Automated Placement (页61-75)。  
-- 结构: Problem, Solution (Available Node Resources 等子节), Discussion, More Information。  
-关键点:  
-- 焦点: Pod 到节点的自动分配。  
-(引用原文: Automated Placement is the core function of the Kubernetes scheduler...)
-
-**Slide 3: 章节概述 (2/2)**  
-主要内容:  
-- 与 Foundational Patterns 相关 (Part I)。  
-- 目标: 优化可用性、性能和容量。  
-关键点:  
-- 调度器高度可配置且演进中。  
-(引用原文: It is an area that is highly configurable, still evolving, and changing rapidly...)
-
-**Slide 4: Problem - 放置挑战 (1/2)**  
-主要内容:  
-- 微服务系统有大量进程，手动放置不可扩展。  
-- Pod 抽象好，但不解决节点分配。  
-关键点:  
-- 示例: 数十或数百微服务。  
-(引用原文: With a large and ever-growing number of microservices, assigning and placing them individually to nodes is not a manageable activity.)
-
-**Slide 5: Problem - 放置挑战 (2/2)**  
-主要内容:  
-- 依赖、资源需求动态变化；集群资源变异。  
-- 放置影响可用性、性能、容量。  
-关键点:  
-- "Moving target that has to be shot on the move."  
-(引用原文: All of that makes scheduling containers to nodes a moving target that has to be shot on the move.)
-
-**Slide 6: Solution - 概述 (1/2)**  
-主要内容:  
-- Kubernetes 调度器负责 Pod 分配。  
-- 考虑依赖、资源、HA 策略；水平扩展和共置。  
-关键点:  
-- 主要控制机制覆盖。  
-(引用原文: It does this by considering runtime dependencies, resource requirements...)
-
-**Slide 7: Solution - 概述 (2/2)**  
-主要内容:  
-- 子节: Available Node Resources, Container Demands, Scheduler Configs, Process, Affinity 等。  
-- 确保 Pod 匹配节点容量。  
-关键点:  
-- 调度器默认策略适合多数用例。  
-(引用原文: The scheduler has a default set of predicate and priority policies configured...)
-
-**Slide 8: Available Node Resources - 概念 (1/2)**  
-主要内容:  
-- 节点容量公式: Allocatable = Node - Kube-Reserved - System-Reserved - Eviction。  
-- 预留 kubelet 等守护进程资源。  
-关键点:  
-- 避免资源竞争。  
-(引用原文: Allocatable [capacity for application pods] = Node Capacity... - Eviction Thresholds...)
-
-**Slide 9: Available Node Resources - 概念 (2/2)**  
-主要内容:  
-- 未跟踪容器: 使用占位 Pod 预留。  
-- 示例: Mirror Pod 或静态 Pod。  
-关键点:  
-- 调度器检查总请求 < 可分配。  
-(引用原文: A workaround is to run a placeholder Pod that doesn’t do anything but has only resource requests...)
-
-**Slide 10: Container Resource Demands - 概念**  
-主要内容:  
-- 声明 request/limit 和依赖 (存储、端口)。  
-- 粗粒度需求可能导致 stranded resources。  
-关键点:  
-- 细粒度优化利用率。  
-(引用原文: It boils down to having containers that declare their resource profiles...)
-
-**Slide 11: Scheduler Configurations - 概念**  
-主要内容:  
-- v1.23 前: Scheduling Policy (predicates/priorities)。  
-- 后: Scheduling Profiles。  
-关键点:  
-- 示例: 覆盖 PodTopologySpread 插件。  
-(引用原文: In Kubernetes versions before v1.23, a scheduling policy can be used...)
-
-**Slide 12: Scheduling Process - 步骤 (1/2)**  
-主要内容:  
-- 步骤1: Filter 节点 (资源匹配、亲和性)。  
-- 步骤2: Score 剩余节点 (权重排序)。  
-关键点:  
-- 通知 API 关于 assignment。  
-(引用原文: In the last stage, the scheduler notifies the API server about the assignment decision...)
-
-**Slide 13: Scheduling Process - 步骤 (2/2)**  
-主要内容:  
-- 示例: nodeSelector 强制标签匹配。  
-- YAML: spec.nodeSelector: {disktype: ssd}。  
-关键点:  
-- 简单硬编码。  
-(插入 Example YAML 代码块)
-
-**Slide 14: Node Affinity - 概念**  
-主要内容:  
-- 更表达力: requiredDuringSchedulingIgnoredDuringExecution / preferred。  
-- 运算符: In, NotIn, Gt 等。  
-关键点:  
-- 示例: numberCores > 3。  
-(引用原文: Node affinity, which is a more expressive way... allows specifying rules as either required or preferred.)
-
-**Slide 15: Pod Affinity and Anti-Affinity - 概念**  
-主要内容:  
-- Pod 亲和: 共置基于标签/拓扑键 (zone/region)。  
-- 反亲和: 扩展避免单点故障。  
-关键点:  
-- 细粒度规则。  
-(引用原文: Using the topologyKey field... enforce more fine-grained rules...)
-
-**Slide 16: Topology Spread Constraints - 概念 (1/2)**  
-主要内容:  
-- 均匀分布 Pod，使用 maxSkew, whenUnsatisfiable。  
-- 拓扑键: topology.kubernetes.io/zone。  
-关键点:  
-- 支持滚动升级允许不平衡。  
-(引用原文: maxSkew defines the maximum degree to which Pods can be unevenly distributed...)
-
-**Slide 17: Topology Spread Constraints - 概念 (2/2)**  
-主要内容:  
-- DoNotSchedule: 硬约束；ScheduleAnyway: 软优先。  
-- 示例 YAML: topologySpreadConstraints。  
-关键点:  
-- 演进功能。  
-(插入 Example YAML 代码块)
-
-**Slide 18: Taints and Tolerations - 概念 (1/2)**  
-主要内容:  
-- Taints: 节点排斥 Pod (NoSchedule 等)。  
-- Tolerations: Pod 容忍匹配 taints。  
-关键点:  
-- 专用节点。  
-(引用原文: Taints and tolerations are the opposite. They allow the nodes to control which Pods...)
-
-**Slide 19: Taints and Tolerations - 概念 (2/2) & Discussion**  
-主要内容:  
-- 效果: NoSchedule, PreferNoSchedule, NoExecute。  
-- 讨论: 放置是 art，最小干预；避免过度限制。  
-关键点:  
-- 使用 descheduler 碎片整理。  
-(引用原文: There are hard taints... effect=NoSchedule... Placement is the art of assigning Pods...)
-
-**Slide 20: More Information & 总结**  
-主要内容:  
-- 参考: Assigning Pods to Nodes, Scheduler Config 等 Kubernetes 文档。  
-总结:  
-- Automated Placement 优化集群利用。  
-- 与题目: 覆盖公式、过程、约束。  
-关键点:  
-- 进一步: k8spatterns.io。  
-(引用原文: Additional information related to this pattern can be found...)
+- 通过唯一名称启动自定义调度器实例
+- 差异化配置
+- 实现专用调度逻辑
+
+---
+# Placement Policies
+在Pod定义中添加schedulerName字段指定自定义调度器。
+
+> Then when defining a Pod, just add the field .spec.schedulerName with the name of your custom scheduler to the Pod specification and the Pod will be picked up by the custom scheduler only.
+
+```yaml
+spec:
+  schedulerName: my-custom-scheduler
+```
+- Pod spec 中添加 schedulerName 字段
+- 仅由指定调度器处理
+- 精确控制放置流程
+
+---
+# Scheduling Process
+Pod到节点分配过程概述。
+
+> A Pod-to-node assignment process
+
+- Pod 到节点分配过程概述
+- 核心调度工作流
+- 确保高效匹配
+
+---
+# Scheduling Process
+未分配Pod创建后，调度器立即挑选并应用过滤和优先级策略。
+
+> As soon as a Pod is created that is not assigned to a node yet, it gets picked by the scheduler together with all the available nodes and the set of filtering and priority policies.
+
+- 未分配 Pod 创建后立即被调度器挑选
+- 涉及所有可用节点和过滤/优先级策略
+- 实时响应机制
+
+---
+# Scheduling Process
+第一阶段应用过滤策略，排除不合格节点。
+
+> In the first stage, the scheduler applies the filtering policies and removes all nodes that do not qualify based on the Pod’s criteria.
+
+- 第一阶段：应用过滤策略，排除不合格节点
+- 基于 Pod 标准筛选
+- 快速缩小候选集
+
+---
+# Scheduling Process
+第二阶段对剩余节点按权重排序。
+
+> In the second stage, the remaining nodes get ordered by weight.
+
+- 第二阶段：剩余节点按权重排序
+- 优先级计算
+- 优化选择
+
+---
+# Scheduling Process
+第三阶段将Pod分配到选定节点。
+
+> In the last stage the Pod gets a node assigned, which is the primary outcome of the scheduling process.
+
+- 第三阶段：分配节点给 Pod
+- 调度主要结果
+- 完成放置
+
+---
+# Scheduling Process
+调度器选择未放置Pod、所有节点、过滤器和优先级。
+
+> Scheduler picks up an available Pod which is not yet placed to a particular node. Also the scheduler picks up all the available node, filters, priorities.
+
+- 调度器选择未放置 Pod 和所有节点、过滤器、优先级
+- 全面评估
+- 动态决策基础
+
+---
+# Scheduling Process
+先应用过滤，排除不符节点。
+
+> First scheduler applies all the filtering policies and filters out the node which does not qualify based on Pod’s criteria.
+
+- 先应用过滤，排除不符节点
+- Pod 标准驱动
+- 高效预筛选
+
+---
+# Scheduling Process
+排序剩余节点，最后分配Pod到特定节点。
+
+> After that the remaining node get sorted on its priority. Lastly Pod gets assigned to a particular node.
+
+- 排序剩余节点，最后分配
+- 优先级主导
+- 最终绑定
+
+---
+# Node Affinity
+节点亲和性允许添加自定义约束，过滤可用节点。
+
+> Node Affinity allows to add more constraint as per our requirement. These constraints filters out node from the available nodes.
+
+- 节点亲和性添加自定义约束，过滤节点
+- 增强选择控制
+- 满足特定需求
+
+---
+# Node Affinity
+节点亲和性在节点粒度工作。
+
+> Node Affinity works at node granularity.
+
+- 节点级粒度操作
+- 与 Pod 亲和性对比
+- 针对硬件或标签
+
+---
+# Node Affinity
+示例要求节点核心数大于3。
+
+**Example:**
+```yaml
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: numberCores
+            operator: Gt
+            values: [ "3" ]
+```
+
+- 示例：要求节点核心数 >3
+- requiredDuringSchedulingIgnoredDuringExecution 强制过滤
+- 确保资源充足
+
+---
+# Pod Affinity
+Pod亲和性和反亲和性创建Pod间放置依赖。
+
+> Pod affinity, anti-affinity allows us to create dependencies between pods in terms of there placement.
+
+- Pod 亲和性和反亲和性创建 Pod 间放置依赖
+- 影响邻近性
+- 优化通信或隔离
+
+---
+# Pod Affinity
+Pod亲和性在Pod粒度工作，与节点亲和性不同。
+
+> Node affinity works at node granularity, whereas Pod affinity works at pod granularity.
+
+- Pod 级粒度，与节点亲和性不同
+- 细粒度控制
+- 适用于集群拓扑
+
+---
+# Pod Affinity
+示例亲和高机密Pod，在安全区拓扑。
+
+**Example:**
+```yaml
+spec:
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            confidential: high
+        topologyKey: security-zone
+```
+
+- 示例：亲和高机密 Pod，在安全区拓扑
+- 标签选择器匹配
+- 强制调度要求
+
+---
+# Taints and Tolerations
+污点和容忍从节点侧控制，约束Pod调度，与亲和性互补。
+
+> Until now we have seen Node, Pod Affinity which works from the side of Pod. Taints and Tolerations give control to the Node where with Taints and Tolerations Nodes can put constraint — for which pods can be scheduled or not scheduled.
+
+- 污点和容忍从节点侧控制，约束 Pod 调度
+- 与亲和性互补
+- 节点主动拒绝
+
+---
+# Taints and Tolerations
+污点是节点特性，仅容忍Pod可调度到污点节点。
+
+> Taint is the characteristic of a node, which prevents Pods from getting scheduled on the node. Only Pod with toleration associated with taint can be scheduled on the tainted node.
+
+- 污点是节点特性，阻止调度；仅容忍 Pod 可调度
+- 匹配机制
+- 实现专用节点
+
+---
+
+**Example (Taint on Node):**
+```yaml
+apiVersion: v1
+kind: Node
+metadata:
+  name: master
+spec:
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+```
+
+- 示例：主节点添加 NoSchedule 污点
+- 防止一般 Pod 调度
+- 保留专属使用
+
+---
+
+**Example (Toleration on Pod):**
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test
+spec:
+  containers:
+  - image: test-image:v1.0
+    name: test
+  tolerations:
+  - key: node-role.kubernetes.io/master
+    operator: Exists
+    effect: NoSchedule
+```
+
+- 示例：Pod 添加容忍主节点污点
+- Exists 操作符匹配
+- 允许调度到污点节点
+
+---
+# Taints and Tolerations
+硬污点阻止调度，软污点避免调度，NoExecute可驱逐运行Pod。
+
+> There are hard taints that prevent scheduling on a node (effect=NoSchedule), soft taints that try to avoid scheduling on a node (effect=PreferNoSchedule), and taints that can evict already running Pods from a node (effect=NoExecute).
+
+- 硬污点 NoSchedule 阻止调度，软 PreferNoSchedule 避免，NoExecute 可驱逐运行 Pod
+- 效果级别区分
+- 渐进控制强度
+
+---
+# Descheduler
+调度后不调整放置，除非Pod删除重创，导致静态局限。
+
+> Once a Pod is assigned to a node, the job of the scheduler is done, and it does not change the placement of the Pod unless the Pod is deleted and recreated without a node assignment.
+
+- 调度后不调整放置，除非 Pod 删除重创
+- 静态分配局限
+- 导致碎片化
+
+---
+# Descheduler
+时间积累资源碎片，导致低利用率。
+
+> As you have seen, with time, this can lead to resource fragmentation and poor utilization of cluster resources.
+
+- 时间积累资源碎片，低利用率
+- 动态集群问题
+- 需要重新平衡
+
+---
+# Descheduler
+调度决策基于当时视图，动态变化不修正旧放置。
+
+> Another potential issue is that the scheduler decisions are based on its cluster view at the point in time when a new Pod is scheduled. If a cluster is dynamic and the resource profile of the nodes changes or new nodes are added, the scheduler will not rectify its previous Pod placements.
+
+- 决策基于调度时视图，动态变化不修正旧放置
+- 节点变化影响
+- 历史决策过时
+
+---
+# Descheduler
+节点标签变化也不修正旧放置，强调重新调度需求。
+
+> Apart from changing the node capacity, you may also alter the labels on the nodes that affect placement, but past placements are not rectified either.
+
+- 节点标签变化也不修正旧放置
+- 全面动态挑战
+- 强调重新调度需求
+
+---
+# Descheduler
+反调度器解决动态场景，通过重调度Pod优化集群。
+
+> All these are scenarios that can be addressed by the descheduler.
+
+- 反调度器解决这些场景
+- 集群清理工具
+- 定期优化
+
+---
+# Descheduler
+反调度器作为Job运行，管理员触发清理和去碎片。
+
+> The Kubernetes descheduler is an optional feature that typically is run as a Job whenever a cluster administrator decides it is a good time to tidy up and defragment a cluster by rescheduling the Pods.
+
+- 可选功能，作为 Job 运行，管理员触发
+- 清理和去碎片
+- 通过重调度 Pod
+
+---
+# Descheduler
+预定义策略可启用/调优，通过文件传递配置。
+
+> The descheduler comes with some predefined policies that can be enabled and tuned or disabled. The policies are passed as a file to the descheduler Pod, and currently, they are the following:
+
+- 预定义策略，可启用/调优/禁用，通过文件传递
+- 当前策略列表
+- 灵活配置
+
+---
+# Descheduler
+策略包括移除重复、低节点利用、违反反亲和等。
+
+> 0. RemoveDuplicates 1. LowNodeUtilization 2. RemovePodsViolatingInterPodAntiAffinity 3. RemovePodsViolatingNodeAffinity
+
+- 策略：移除重复、低节点利用、违反 Pod 反亲和、违反节点亲和
+- 针对常见问题
+- 自动化修复
+
+---
+# Descheduler
+避免驱逐关键Pod、无控制器Pod、DaemonSet等保护机制。
+
+> Regardless of the policy used, the descheduler avoids evicting the following: 0. Critical Pods that are marked with scheduler.alpha.kubernetes.io/criticalpod annotation. 1. Pods not managed by a ReplicaSet, Deployment, or Job. 2. Pods managed by a DaemonSet. 3. Pods that have local storage. 4. Pods with PodDisruptionBudget where eviction would violate its rules. 5. Deschedule Pod itself (achieved by marking itself as a critical Pod).
+
+- 避免驱逐关键 Pod、无控制器 Pod、DaemonSet、本地存储、违反 PDB、自身
+- 保护机制
+- 安全重调度
+
+---
+# Discussion
+自动化放置优化资源利用并遵守策略，处理动态集群。
+
+> Automated Placement ensures efficient resource use and compliance with policies in dynamic clusters.
+
+- 自动化放置优化资源，遵守策略
+- 处理动态环境
+- 提升集群效率
+
+---
+# Discussion
+亲和性、污点和反调度器组合提供Pod分布全面控制。
+
+> Combining affinities, taints, and descheduler provides comprehensive control over Pod distribution.
+
+- 亲和性、污点和反调度器组合全面控制
+- 平衡约束和优化
+- 适应复杂工作负载
+
+

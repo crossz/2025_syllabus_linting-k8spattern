@@ -19,20 +19,4 @@ export default [
     file: "routes/chapter7.tsx"
   },
 
-  {
-    path: "/slides/chapter4",
-    file: "routes/slides.chapter4.tsx"
-  },
-  {
-    path: "/slides/chapter5",
-    file: "routes/slides.chapter5.tsx"
-  },
-  {
-    path: "/slides/chapter6",
-    file: "routes/slides.chapter6.tsx"
-  },
-  {
-    path: "/slides/chapter789",
-    file: "routes/slides.chapter789.tsx"
-  }
 ] satisfies RouteConfig;

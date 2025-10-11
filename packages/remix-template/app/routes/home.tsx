@@ -63,59 +63,7 @@ export default function Home() {
               <p className="text-gray-600 dark:text-gray-300">探索 Kubernetes 中的批处理任务模式</p>
             </Link>
           </div>
-          
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 mt-12">
-            幻灯片演示
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Link 
-              to="/slides/chapter4" 
-              className="block p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4 border-blue-500"
-            >
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                第四章幻灯片
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Health Probe 模式演示
-              </p>
-            </Link>
-            
-            <Link 
-              to="/slides/chapter5" 
-              className="block p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4 border-blue-500"
-            >
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                第五章幻灯片
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Managed Lifecycle 模式演示
-              </p>
-            </Link>
-            
-            <Link 
-              to="/slides/chapter6" 
-              className="block p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4 border-green-500"
-            >
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                第六章幻灯片
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Automated Placement 模式演示
-              </p>
-            </Link>
-            
-            <Link 
-              to="/slides/chapter789" 
-              className="block p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4 border-purple-500"
-            >
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                第七/八/九章幻灯片
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Behavioral Patterns 模式演示
-              </p>
-            </Link>
-          </div>
+
         </div>
       </div>
     </div>

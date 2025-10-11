@@ -1,327 +1,400 @@
-### 题目清单
+---
+class: lead
+---
+# Kubernetes Patterns
+## Chapter 7: Batch Job
+
+- 本章介绍批量作业模式，用于管理隔离的原子工作单元
+- 基于 Job 资源运行短暂 Pod，直到完成
+- 适用于有限工作负载的可靠执行
+
+---
+# Problem
+Pod类型及其在不同场景下的局限性。
+
+> The main primitive in Kubernetes for managing and running containers is the Pod. There are different ways of creating Pods with varying characteristics:
 
-1. 填空题：Kubernetes 中的批处理任务通常有明确的开始和结束时间，并在完成后（ ）。
+- Pod 是管理容器的主要原语，不同创建方式有不同特性
+- 理解 Pod 类型有助于选择合适控制器
+- 为批量作业奠定基础
 
-答案: terminate
+---
+# Problem
+裸Pod的特性及其不适合生产环境的原因。
 
-原文: Batch processing tasks have a definite beginning and ending, and they terminate after completion.
+> Bare Pod It is possible to create a Pod manually to run containers. However, when the node such a Pod is running on fails, the Pod is not restarted. Running Pods this way is discouraged except for development or testing purposes. This mechanism is also known as unmanaged or naked Pods.
 
-2. 单选题：Batch Job 模式用于什么类型的任务？（ ）
-A. 连续运行的服务
-B. 有限时间并完成的任务，如数据转换或备份
-C. 定期调度任务
-D. 节点级守护进程
+- 裸 Pod 手动创建，但节点失败不重启
+- 仅限开发测试，不推荐生产
+- 突出无管理 Pod 的局限性
 
-答案: B. 有限时间并完成的任务，如数据转换或备份
+---
+# Problem
+ReplicaSet控制器及其适用于长运行服务的适用性。
 
-原文: Batch jobs are finite tasks that run to completion, such as data conversion, video encoding, or backups.
+> ReplicaSet This controller is used for creating and managing the lifecycle of Pods expected to run continuously (e.g., to run a web server container). It maintains a stable set of replica Pods running at any given time and guarantees the availability of a specified number of identical Pods. ReplicaSets are described in detail in Chapter 11, “Stateless Service”.
 
-3. 填空题：Job 控制器通过创建 Pod 来执行任务，如果 Pod 失败，它会根据（ ）重试。
+- ReplicaSet 用于连续运行 Pod，如 Web 服务器
+- 维护稳定副本集，保证可用性
+- 适合无状态服务，非批量
 
-答案: backoffLimit
+---
+# Problem
+DaemonSet控制器及其平台级应用的用途。
 
-原文: The Job controller creates Pods to perform the task, and if a Pod fails, it retries according to the backoffLimit.
+> DaemonSet This controller runs a single Pod on every node and is used for managing platform capabilities such as monitoring, log aggregation, storage containers, and others. See Chapter 9, “Daemon Service”, for a more detailed discussion.
 
-4. 单选题：Job 的 completionMode 可以是哪些？（ ）
-A. NonIndexed 和 Indexed
-B. Parallel 和 Serial
-C. Always 和 OnFailure
-D. Rolling 和 Fixed
+- DaemonSet 在每个节点运行单个 Pod
+- 用于监控、日志聚合等平台功能
+- 详见第 9 章，针对基础设施
 
-答案: A. NonIndexed 和 Indexed
+---
+# Problem
+长运行Pod与批量作业需求的对比。
 
-原文: The completionMode can be NonIndexed (default) or Indexed for parallel jobs with unique indices.
+> A common aspect of these Pods is that they represent long-running processes that are not meant to stop after a certain time. However, in some cases there is a need to perform a predefined finite unit of work reliably and then shut ...
 
-5. 填空题：在 Batch Job 中，parallelism 指定同时运行的 Pod 数量，而 completions 指定成功的（ ）数量。
+- 这些 Pod 代表长运行进程，但批量需有限工作
+- 需要可靠执行预定义有限单元，然后关闭
+- 识别长运行 vs 短运行的区别
 
-答案: completions
+---
+# Solution
+批量作业模式的定义和适用场景。
 
-原文: parallelism specifies the number of Pods to run simultaneously, and completions specifies the number of successful completions required.
+> The Batch Job pattern is suited for managing isolated atomic units of work. It is based on the Job resource, which runs short-lived Pods reliably until completion on a distributed environment.
 
-6. 单选题：如果 Job 需要并行处理不同输入，使用什么模式？（ ）
-A. NonIndexed
-B. Indexed
-C. Daemon
-D. Cron
+- 批量作业模式管理隔离原子工作单元
+- 基于 Job 资源运行短暂 Pod 直到完成
+- 分布式环境可靠执行
 
-答案: B. Indexed
+---
+# Solution
+批量作业在其他模式中的应用扩展。
 
-原文: For jobs that need to process different inputs in parallel, use Indexed mode where each Pod gets a unique index.
+> To implement the patterns described in Chapter 7, “Batch Job”, or Chapter 8, “Peri‐ odic Job”, we often use this technique.
 
-7. 填空题：Periodic Job 用于定期运行任务，如每日备份，使用（ ）资源来调度。
+- 实现批量和周期作业常用此技术
+- 连接到主动连接外部系统
+- 扩展到调度场景
 
-答案: CronJob
+---
+# Job
+Job资源的核心机制和配置示例。
 
-原文: Periodic jobs are batch jobs that run on a schedule, using the CronJob resource.
+> A Job creates one or more Pods and will continue to retry execution of the Pods until a specified number of them successfully terminate.
 
-8. 单选题：CronJob 的 schedule 字段使用什么格式？（ ）
-A. YAML
-B. Cron 格式，如 "0 1 * * *"
-C. ISO 日期
-D. Unix 时间戳
+- Job 创建一个或多个 Pod，重试直到指定数成功终止
+- 核心重试机制确保可靠性
+- 适用于失败恢复
 
-答案: B. Cron 格式，如 "0 1 * * *"
+---
+# 
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pi
+spec:
+  template:
+    spec:
+      containers:
+      - name: pi
+        image: perl
+        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+      restartPolicy: Never
+  backoffLimit: 4
+```
+- 示例：计算 pi 的 Job，backoffLimit 4 次重试
+- restartPolicy Never 防止循环重启
 
-原文: The schedule field uses cron format, e.g., "0 1 * * *" for daily at 1 AM.
 
-9. 填空题：concurrencyPolicy 在 CronJob 中控制多个实例的行为，如 Allow、Forbid 或（ ）。
+---
+# Work Queue
+工作队列Job的分发机制。
 
-答案: Replace
+> Similar to Work queue Jobs, you can distribute work items to individual Jobs without needing an external work queue.
 
-原文: concurrencyPolicy can be Allow (run concurrently), Forbid (skip if previous running), or Replace (terminate previous and start new).
+- 工作队列 Job 分发工作项到单个 Job，无需外部队列
+- 内部分发机制
+- 简化架构
 
-10. 单选题：successfulJobsHistoryLimit 用于什么？（ ）
-A. 限制失败 Job 历史
-B. 限制成功 Job 历史记录数量
-C. 设置并行度
-D. 定义调度
+---
+# Work Queue
+并行处理在工作队列中的实现。
 
-答案: B. 限制成功 Job 历史记录数量
+> When you specify .spec.completions to a value greater than 1, the Job will create that many Pods in parallel, each processing one item from the work queue.
 
-原文: successfulJobsHistoryLimit limits the number of successful Job history retained.
+- completions >1 时，并行创建 Pod，每个处理队列一项
+- 并行处理提升效率
+- 队列隐式管理
 
-11. 填空题：Daemon Service 用于在集群的每个节点运行一个 Pod 实例，如日志收集或（ ）代理。
+---
+# Indexed Job
+索引Job的工作分配方式。
 
-答案: network
+> Indexed Jobs Similar to Work queue Jobs, you can distribute work items to individual Jobs without needing an external work queue. When ...
 
-原文: Daemon services run one Pod instance on every node in the cluster, such as for logging or network proxies.
+- 索引 Job 类似工作队列，分发无外部依赖
+- 索引机制分配工作
+- 精确控制分发
 
-12. 单选题：DaemonSet 控制器确保 Pod 运行在哪些节点？（ ）
-A. 仅主节点
-B. 所有或选定节点，使用 nodeSelector
-C. 仅工作节点
-D. 随机节点
+---
+# Discussion
+批量作业模式的整体益处。
 
-答案: B. 所有或选定节点，使用 nodeSelector
+> The Batch Job pattern enables reliable execution of finite tasks in Kubernetes.
 
-原文: The DaemonSet controller ensures a Pod runs on all or selected nodes, using nodeSelector for filtering.
+- 批量模式确保有限任务可靠执行
+- 结合 Job 类型适应不同规模
+- 优化分布式批量处理
 
-13. 填空题：DaemonSet 的 updateStrategy 可以是 RollingUpdate 或（ ）。
 
-答案: OnDelete
 
-原文: updateStrategy can be RollingUpdate (default) or OnDelete (manual update).
+---
 
-14. 单选题：DaemonSet 常用于什么场景？（ ）
-A. 批处理任务
-B. 节点级任务，如监控代理
-C. 定期备份
-D. 状态服务
+## Chapter 8: Periodic Job
+周期作业模式的核心概念和问题背景。
 
-答案: B. 节点级任务，如监控代理
+- 本章扩展批量作业，添加时间维度
+- 通过时序事件触发工作单元执行
+- 适用于维护和业务周期任务
 
-原文: Common use cases include node monitoring agents, log collectors, or network plugins.
+---
+# Problem
+分布式系统中周期任务的传统与现代对比。
 
-15. 填空题：在 Batch Job 讨论中，Job 是 Kubernetes 中运行有限任务的（ ）方式。
+> In the world of distributed systems and microservices, there is a clear tendency toward real-time and event-driven application interactions using HTTP and lightweight messaging. However, regardless of the latest trends in software development, job scheduling has a long history, and it is still relevant.
 
-答案: idiomatic
+- 分布式系统趋向实时事件驱动，但调度历史悠久仍相关
+- HTTP 和消息主导，但周期任务持久
+- 平衡现代与传统需求
 
-原文: Jobs are the idiomatic way in Kubernetes to run finite tasks.
+---
+# Problem
+周期作业的典型应用场景。
 
-16. 单选题：对于 Periodic Job，如果 previous Job 仍在运行，Forbid 策略会做什么？（ ）
-A. 允许并发
-B. 跳过新实例
-C. 替换旧实例
-D. 终止集群
-
-答案: B. 跳过新实例
-
-原文: Forbid skips the new instance if the previous is still running.
-
-17. 填空题：DaemonSet Pod 自动调度到新节点，当节点（ ）时。
-
-答案: added
-
-原文: Pods are automatically scheduled to new nodes when added to the cluster.
-
-18. 单选题：Batch Job 的 activeDeadlineSeconds 用于什么？（ ）
-A. 设置重试次数
-B. 限制 Job 总运行时间
-C. 定义并行度
-D. 调度时间
-
-答案: B. 限制 Job 总运行时间
-
-原文: activeDeadlineSeconds limits the total runtime of the Job.
-
-19. 填空题：在 Periodic Job 中，startingDeadlineSeconds 指定错过调度后启动的（ ）窗口。
-
-答案: time
-
-原文: startingDeadlineSeconds specifies the time window to start after a missed schedule.
-
-20. 单选题：Daemon Service 的 More Information 可能包括什么？（ ）
-A. DaemonSet 文档
-B. Job 文档
-C. Deployment 文档
-D. Service 文档
-
-答案: A. DaemonSet 文档
-
-原文: More Information includes links to DaemonSet documentation.
-
-### PPT Slides 文字稿
-
-**Slide 1: 标题页**  
-标题: Kubernetes Patterns - Chapters 7,8,9: Behavioral Patterns  
-副标题: Batch Job, Periodic Job, Daemon Service  
-作者: Bilgin Ibryam & Roland Huß (Second Edition)  
-内容概述: 本PPT覆盖行为模式，包括有限任务、定期任务和节点级服务。  
-(包括书籍封面图片)
-
-**Slide 2: Part II Overview - Behavioral Patterns**  
-主要内容:  
-- 行为模式管理容器和平台交互。  
-- 章节7: Batch Job  
-- 章节8: Periodic Job  
-- 章节9: Daemon Service  
-关键点:  
-- 焦点于任务执行、调度和节点分布。  
-(引用目录: Part II. Behavioral Patterns)
-
-**Slide 3: Chapter 7 - Batch Job: Problem**  
-主要内容:  
-- 问题: 需要运行有限时间任务，如批处理、计算或备份，这些任务有明确结束。  
-- 与连续服务不同，需要平台管理完成和重试。  
-关键点:  
-- 示例: 数据转换、视频编码。  
-(原文: Batch processing tasks have a definite beginning and ending...)
-
-**Slide 4: Chapter 7 - Batch Job: Solution (Job Resource)**  
-主要内容:  
-- 解决方案: 使用 Job 资源创建 Pod 运行到完成。  
-- 特性: backoffLimit 用于重试，activeDeadlineSeconds 限制时间。  
-关键点:  
-- Job 控制器处理失败和重启。  
-(原文: The Job controller creates Pods to perform the task...)
-
-**Slide 5: Chapter 7 - Batch Job: Parallelism and Completions**  
-主要内容:  
-- parallelism: 同时运行 Pod 数量。  
-- completions: 所需成功完成数量。  
-关键点:  
-- 用于并行处理任务。  
-(原文: parallelism specifies the number of Pods to run simultaneously...)
-
-**Slide 6: Chapter 7 - Batch Job: Completion Modes**  
-主要内容:  
-- NonIndexed: 默认，简单完成计数。  
-- Indexed: 每个 Pod 有唯一索引，用于不同输入。  
-关键点:  
-- 示例: 处理分片数据。  
-(原文: The completionMode can be NonIndexed or Indexed...)
-
-**Slide 7: Chapter 7 - Batch Job: Discussion & More Information**  
-主要内容:  
-- 讨论: Job 是运行批任务的标准方式，支持可扩展性。  
-- 更多信息: Kubernetes Job 文档、示例。  
-关键点:  
-- 与题目相关: 强调重试和模式。  
-(原文: Jobs are the idiomatic way in Kubernetes to run finite tasks.)
-
-**Slide 8: Chapter 8 - Periodic Job: Problem**  
-主要内容:  
-- 问题: 需要定期运行批任务，如每日报告或清理。  
-- 标准批处理不支持调度。  
-关键点:  
-- 示例: 备份、数据同步。  
-(原文: Periodic jobs are batch jobs that run on a schedule...)
-
-**Slide 9: Chapter 8 - Periodic Job: Solution (CronJob Resource)**  
-主要内容:  
-- 解决方案: 使用 CronJob 创建定时 Job。  
-- schedule: Cron 格式 (e.g., "*/5 * * * *")。  
-关键点:  
-- 创建底层 Job 实例。  
-(原文: The schedule field uses cron format...)
-
-**Slide 10: Chapter 8 - Periodic Job: Concurrency Policy**  
-主要内容:  
-- Allow: 允许并发。  
-- Forbid: 跳过如果上一运行中。  
-- Replace: 替换上一实例。  
-关键点:  
-- 控制重叠执行。  
-(原文: concurrencyPolicy can be Allow, Forbid, or Replace.)
-
-**Slide 11: Chapter 8 - Periodic Job: History Limits**  
-主要内容:  
-- successfulJobsHistoryLimit: 保留成功历史。  
-- failedJobsHistoryLimit: 保留失败历史。  
-关键点:  
-- 管理资源使用。  
-(原文: successfulJobsHistoryLimit limits the number of successful Job history...)
-
-**Slide 12: Chapter 8 - Periodic Job: Additional Features**  
-主要内容:  
-- startingDeadlineSeconds: 错过后启动窗口。  
-- suspend: 暂停调度。  
-关键点:  
-- 灵活调度控制。  
-(原文: startingDeadlineSeconds specifies the time window...)
-
-**Slide 13: Chapter 8 - Periodic Job: Discussion & More Information**  
-主要内容:  
-- 讨论: CronJob 扩展 Job 为定期任务。  
-- 更多信息: CronJob 文档。  
-关键点:  
-- 与题目相关: 政策和限制。  
-(原文: Discussion on using CronJobs for scheduled tasks.)
-
-**Slide 14: Chapter 9 - Daemon Service: Problem**  
-主要内容:  
-- 问题: 需要在每个节点运行服务，如监控或日志。  
-- 标准 Deployment 不保证节点覆盖。  
-关键点:  
-- 示例: 网络代理、存储守护。  
-(原文: Daemon services run one Pod instance on every node...)
-
-**Slide 15: Chapter 9 - Daemon Service: Solution (DaemonSet Resource)**  
-主要内容:  
-- 解决方案: DaemonSet 确保每个节点一个 Pod。  
-- 自动调度到新节点。  
-关键点:  
-- 使用 nodeSelector 过滤节点。  
-(原文: The DaemonSet controller ensures a Pod runs on all or selected nodes...)
-
-**Slide 16: Chapter 9 - Daemon Service: Update Strategy**  
-主要内容:  
-- RollingUpdate: 渐进更新，maxUnavailable 控制。  
-- OnDelete: 手动触发更新。  
-关键点:  
-- 最小中断。  
-(原文: updateStrategy can be RollingUpdate or OnDelete.)
-
-**Slide 17: Chapter 9 - Daemon Service: Use Cases**  
-主要内容:  
-- 日志收集 (e.g., Fluentd)。  
-- 监控 (e.g., node-exporter)。  
-- 网络 (e.g., Calico)。  
-关键点:  
-- 节点级基础设施。  
-(原文: Common use cases include node monitoring agents...)
-
-**Slide 18: Chapter 9 - Daemon Service: Discussion**  
-主要内容:  
-- 讨论: DaemonSet 适合基础设施任务，不适合应用逻辑。  
-- 与节点生命周期绑定。  
-关键点:  
-- 高可用性考虑。  
-(原文: Discussion on when to use DaemonSets.)
-
-**Slide 19: Chapter 9 - Daemon Service: More Information**  
-主要内容:  
-- 参考: DaemonSet 文档、示例 YAML。  
-- 相关资源: Kubernetes 社区。  
-关键点:  
-- 进一步阅读。  
-(原文: More Information includes links to DaemonSet documentation.)
-
-**Slide 20: Summary - Chapters 7,8,9**  
-主要内容:  
-- Batch Job: 有限任务。  
-- Periodic Job: 调度任务。  
-- Daemon Service: 节点任务。  
-- 与题目整合: 覆盖核心概念如 policy、strategy。  
-关键点:  
-- 这些模式提升 Kubernetes 行为管理。  
+> Periodic jobs are commonly used for automating system maintenance or administrative tasks. They are also relevant to business applications requiring specific tasks to be performed periodically. Typical examples here are business-to-business integration through file transfer, application integration through database polling, sending newsletter emails, and cleaning up and archiving old files.
+
+- 周期作业自动化维护和业务任务
+- 示例：文件传输、数据库轮询、邮件发送、文件清理
+- 展示实际应用场景
+
+---
+# Problem
+传统调度工具的局限性。
+
+> The traditional way of handling periodic jobs for system maintenance purposes has been to use specialized scheduling software or cron. However, specialized software can be expensive for simple use cases, and cron jobs running on a single server are difficult to maintain and represent a single point of failure.
+
+- 传统用专用软件或 cron，但昂贵且单点故障
+- 维护困难
+- 突出云原生替代需求
+
+---
+# Problem
+开发者自定义调度实现的常见做法。
+
+> That is why, very often, developers tend to implement solutions that can handle both the scheduling aspect and the business logic that needs to be performed. For example, in the Java world, libraries such as Quartz, Spring Batch, and custom implementations with the `ScheduledThreadPoolExecutor ...
+
+- 开发者常集成调度和业务逻辑，如 Quartz、Spring Batch
+- ScheduledThreadPoolExecutor 自定义实现
+- 避免外部依赖复杂性
+
+---
+# Solution
+周期作业模式对批量模式的扩展。
+
+> The Periodic Job pattern extends the Batch Job pattern by adding a time dimension and allowing the execution of a unit of work to be triggered by a temporal event.
+
+- 周期作业扩展批量，添加时间触发
+- 时序事件驱动执行
+- 结合批量可靠性
+
+---
+# Solution
+周期作业在执行单元上的益处。
+
+> Chapter 8, “Periodic Job”, allows the execution of a unit of work to be ...
+
+- 允许工作单元按时执行
+- 模式核心益处
+- 自动化周期操作
+
+---
+# CronJob
+CronJob的配置和示例。
+
+> Employ the Batch Job example to run periodic jobs according to a predefined schedule.
+
+- 使用批量示例按预定义调度运行周期作业
+- CronJob 实现
+- 标准 Kubernetes 原语
+
+---
+# 
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hello
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: busybox
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - date; echo Hello from the Kubernetes cluster
+          restartPolicy: OnFailure
+```
+- 示例：每分钟运行 hello Job
+- schedule 使用 cron 语法
+
+
+---
+# Discussion
+周期作业模式的整体优势。
+
+> Periodic Job pattern automates recurring tasks reliably in Kubernetes.
+
+- 可靠自动化重复任务
+- 避免单点故障，提升可维护性
+- 集成业务逻辑简化开发
+
+---
+# More Information
+周期作业的参考资源。
+
+> - Periodic Job Example
+> - Kubernetes CronJob
+
+- 示例和文档
+- 调度配置细节
+- 最佳实践
+
+---
+
+## Chapter 9: Singleton Service
+单例服务模式的核心概念和问题背景。
+
+- 本章确保应用只有一个活跃实例，同时高可用
+- 模式实现单一实例管理
+- 适用于控制器或独占资源服务
+
+---
+# Problem
+单例服务模式的定义和实现挑战。
+
+> The Singleton Service pattern ensures only one instance of an application is active at a time and yet is highly available. This pattern can be implemented from ...
+
+- 确保单一活跃实例，同时高可用
+- 实现挑战：平衡唯一性和可靠性
+- 常见于独占场景
+
+---
+# Problem
+单例服务模式的确保机制。
+
+> The Singleton service pattern ensures that only one instance of an application is active at a time, yet highly available.
+
+- 单一实例活跃，高可用保证
+- 模式目标
+- 防止多实例冲突
+
+---
+# Problem
+单例模式在控制器中的应用。
+
+> controllers use the Singleton Service pattern explained in Chapter 10.
+
+- 控制器常用此模式
+- 详见相关章节
+- 扩展到高级用例
+
+---
+# Solution
+单例服务模式的用途和范围。
+
+> Purpose: Ensure that only one instance of a particular application or service is active at any time within the ...
+
+- 确保特定应用单一活跃实例
+- 核心目的
+- 集群内唯一性
+
+---
+# Solution
+Kubernetes中单例服务的实现方法。
+
+> The Singleton Service pattern in Kubernetes is a method that ensures only one instance of an application is active at any ...
+
+- Kubernetes 方法实现单一实例
+- 活跃管理
+- 资源协调
+
+---
+# 
+
+> Use Deployment with replicas=1 for basic singleton.
+
+- Deployment replicas=1 基本实现
+- 简单配置
+- 自动重启, 基础高可用
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: singleton
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: singleton
+  template:
+    metadata:
+      labels:
+        app: singleton
+    spec:
+      containers:
+      - name: app
+        image: singleton-image
+```
+
+
+
+---
+# Pod Disruption Budget
+PodDisruptionBudget在单例中的作用。
+
+> Use PodDisruptionBudget to control voluntary disruptions.
+
+- PDB 控制自愿中断
+- 最小可用 Pod
+- 提升稳定性
+
+---
+# Leader Election
+领导者选举在高级单例中的应用。
+
+> For advanced, use leader election to coordinate active instance.
+
+- 领导者选举协调活跃实例
+- 动态选择领导
+- 处理故障切换
+
+---
+# Discussion
+单例模式在分布式系统中的平衡作用。
+
+> Singleton pattern balances uniqueness and availability in distributed systems.
+
+- 平衡唯一性和可用性
+- 结合 Deployment 和 PDB
+- 适用于关键单一服务
+
